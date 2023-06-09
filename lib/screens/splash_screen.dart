@@ -141,10 +141,12 @@ class _SplashScreenState extends State<SplashScreen>
 
   Future startAnimation() async {
     await Future.delayed(const Duration(milliseconds: 500));
-    for (int i = 0; i < 1; i++) {
-      await animationController.forward();
-      await animationController.reverse();
-    }
+    await animationController.forward();
+    await animationController.reverse();
+    // for (int i = 0; i < 1; i++) {
+    //   await animationController.forward();
+    //   await animationController.reverse();
+    // }
     if (context.mounted) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(

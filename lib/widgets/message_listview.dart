@@ -48,45 +48,6 @@ class MessageListView extends StatelessWidget {
         ),
       ),
     );
-
-    //   ListView.builder(
-    //     shrinkWrap: true,
-    //     itemCount: messages.length,
-    //     itemBuilder: (context, i) {
-    //       var message = messages[i];
-    //       // Format the message body to display limited text
-    //       var limitMessageBody = message.body!.length <= 80
-    //           ? message.body
-    //           : '${message.body!.substring(0, 80)}...';
-    //       // Format the date to display only the time
-    //       var formattedTime = _formatDateTime(message.date!);
-    //       // DateFormat.Hm().format(message.date!);
-    //       return ListTile(
-    //         title: Row(
-    //           children: [
-    //             Expanded(
-    //               child: Text(
-    //                 '${message.sender}',
-    //                 style: const TextStyle(
-    //                   fontWeight: FontWeight.bold,
-    //                 ),
-    //                 overflow: TextOverflow.ellipsis,
-    //               ),
-    //             ),
-    //             Text(
-    //               formattedTime,
-    //               style: const TextStyle(
-    //                 fontWeight: FontWeight.w300,
-    //               ),
-    //             ),
-    //           ],
-    //         ),
-    //         // title: Text('${message.sender}'),
-    //         // trailing: Text(formattedTime),
-    //         subtitle: Text(limitMessageBody!),
-    //       );
-    //     },
-    //   );
   }
 
   String _formatDateTime(DateTime dateTime) {
