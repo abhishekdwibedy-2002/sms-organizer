@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:smstracker/screens/splash_screen.dart';
 import 'package:smstracker/utils/theme.dart';
+import 'package:smstracker/notification.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await NotificationService.initializeNotifications();
   runApp(const ProviderScope(child: MyApp()));
 }
 

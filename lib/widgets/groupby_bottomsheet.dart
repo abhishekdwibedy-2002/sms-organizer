@@ -37,7 +37,7 @@ class GroupByBottomSheet extends StatelessWidget {
               return ListTile(
                 leading: const Icon(Icons.access_time),
                 title: Text(option),
-                onTap: () => Navigator.of(context).pop(),
+                onTap: () => Navigator.of(context).pop(option),
               );
             },
           ),

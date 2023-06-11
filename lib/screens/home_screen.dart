@@ -25,7 +25,9 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final messages = ref.watch(messageProvider);
+    Future<void> refreshMessages() async {
+      await ref.read(messageNotifierProvider).fetchMessages();
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -45,25 +47,52 @@ class HomeScreen extends ConsumerWidget {
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: () => ref.refresh(messageProvider.future),
-        child: messages.when(
-          data: (sms) {
-            return ListView.builder(
-              padding: const EdgeInsets.all(8),
-              itemCount: sms.length,
-              itemBuilder: (context, index) {
-                final message = sms[index];
-                return MessageListView(message: message);
+        onRefresh: refreshMessages,
+        child: Builder(
+          builder: (context) {
+            final smsMessages = ref.watch(messageProvider);
+            return smsMessages.when(
+              data: (sms) {
+                final groupedMessages =
+                    ref.read(messageNotifierProvider).groupMessagesByHours(sms);
+
+                return ListView.builder(
+                  padding: const EdgeInsets.all(8),
+                  itemCount: groupedMessages.length,
+                  itemBuilder: (context, index) {
+                    final entry = groupedMessages.entries.elementAt(index);
+                    final hourDiff = entry.key;
+                    final messages = entry.value;
+                    return Column(
+                      children: [
+                        Text(hourDiff),
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: messages.length,
+                          itemBuilder: (context, index) {
+                            final message = messages[index];
+                            return MessageListView(message: message);
+                          },
+                        ),
+                      ],
+                    );
+                  },
+                );
               },
+              error: (error, stackTrace) => Text(
+                error.toString(),
+              ),
+              loading: () => Center(
+                child: CircularProgressIndicator(
+                    color: Theme.of(context).colorScheme.primary),
+              ),
             );
           },
-          error: (error, stackTrace) => Text(error.toString()),
-          loading: () => Center(
-            child: CircularProgressIndicator(
-                color: Theme.of(context).colorScheme.primary),
-          ),
         ),
       ),
     );
   }
+
+  // groupMessagesByHours(List<SmsMessage> sms) {}
 }
