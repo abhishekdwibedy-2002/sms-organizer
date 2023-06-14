@@ -1,32 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:smstracker/widgets/groupby_bottomsheet.dart';
 import 'package:smstracker/widgets/message_listview.dart';
 import 'package:smstracker/providers/message_provider.dart';
+import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
-  void showGroupByOptions(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) {
-        return AnimatedContainer(
-          duration: const Duration(
-            milliseconds: 600,
-          ),
-          curve: Curves.easeInOut,
-          height: MediaQuery.of(context).size.height * 0.6,
-          child: const GroupByBottomSheet(),
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     Future<void> refreshMessages() async {
-      await ref.read(messageNotifierProvider).fetchMessages();
+      await ref.read(messageNotifierProvider).refreshMessages();
     }
 
     return Scaffold(
@@ -35,18 +19,22 @@ class HomeScreen extends ConsumerWidget {
           'SMS Organizer',
           style: TextStyle(
             fontSize: 22,
+            fontWeight: FontWeight.bold,
           ),
         ),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Theme.of(context).colorScheme.inversePrimary,
+        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
         actions: [
           IconButton(
-            onPressed: () => showGroupByOptions(context),
-            icon: const Icon(Icons.filter_list_sharp),
+            onPressed: () =>
+                ref.read(messageNotifierProvider).refreshMessages(),
+            icon: const Icon(Icons.refresh_rounded),
           ),
         ],
       ),
-      body: RefreshIndicator(
+      body: LiquidPullToRefresh(
+        color: Theme.of(context).colorScheme.secondaryContainer,
+        showChildOpacityTransition: true,
         onRefresh: refreshMessages,
         child: Builder(
           builder: (context) {
@@ -72,7 +60,12 @@ class HomeScreen extends ConsumerWidget {
                           itemCount: messages.length,
                           itemBuilder: (context, index) {
                             final message = messages[index];
-                            return MessageListView(message: message);
+                            final isExpanded =
+                                ref.read(expandedIndexProvider).contains(index);
+                            return MessageListView(
+                              message: message,
+                              isExpanded: isExpanded,
+                            );
                           },
                         ),
                       ],
@@ -93,6 +86,4 @@ class HomeScreen extends ConsumerWidget {
       ),
     );
   }
-
-  // groupMessagesByHours(List<SmsMessage> sms) {}
 }

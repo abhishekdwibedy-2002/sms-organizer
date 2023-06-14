@@ -24,6 +24,7 @@ class NotificationService {
     const NotificationDetails platformChannelSpecifics =
         NotificationDetails(android: androidPlatformChannelSpecifics);
 
+
     await _flutterLocalNotificationsPlugin.show(
       0,
       sender,

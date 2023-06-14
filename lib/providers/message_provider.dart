@@ -1,10 +1,12 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_sms_inbox/flutter_sms_inbox.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:smstracker/notification.dart';
+import 'package:smstracker/platformchannel.dart';
+
+final expandedIndexProvider = Provider<List<int>>((ref) => []);
 
 final messageProvider = StreamProvider.autoDispose<List<SmsMessage>>(
   (ref) => ref.watch(messageNotifierProvider).messageStream(),
@@ -18,7 +20,7 @@ class MessageNotifier extends StateNotifier<List<SmsMessage>> {
   MessageNotifier() : super([]) {
     _initializeNotifications();
     fetchMessages();
-    startFetch();
+    startSmsListener();
   }
   // final Shader _read;
 
@@ -30,6 +32,13 @@ class MessageNotifier extends StateNotifier<List<SmsMessage>> {
 
   DateTime? lastFetchedMessageTime;
 
+  void startSmsListener() {
+    PlatformChannel().smsStream().listen((newSms) {
+      fetchMessages();
+      _showNewMessageNotifications(newSms);
+    });
+  }
+
   Future<void> _initializeNotifications() async {
     await NotificationService.initializeNotifications();
   }
@@ -38,13 +47,22 @@ class MessageNotifier extends StateNotifier<List<SmsMessage>> {
     await NotificationService.showNotification(sender, message);
   }
 
+  Future<void> refreshMessages() async {
+    state = [];
+    _messageStreamController.add(state);
+    lastFetchedMessageTime = null;
+    await fetchMessages();
+  }
+
   void startFetch() {
     Timer.periodic(const Duration(seconds: 30), (_) {
       // _messageStreamController.add(state);
       fetchMessages();
     });
   }
-  
+
+  // function which takes a list of SmsMessage objects and
+  // groups them by hours based on their timestamp.
   Map<String, List<SmsMessage>> groupMessagesByHours(
       List<SmsMessage> messages) {
     final groupedMessages = <String, List<SmsMessage>>{};
@@ -77,34 +95,33 @@ class MessageNotifier extends StateNotifier<List<SmsMessage>> {
             SmsQueryKind.inbox,
           ],
         );
-        // Perform any additional filtering or sorting if needed
-        var now = DateTime.now(); //show recent time
         final filteredMessages = messages.where((message) {
+          var now = DateTime.now(); //show recent time
           var difference = now.difference(message.date!);
           // condition to return the sms that is inside 1 day
           return difference.inDays <= 1;
         }).toList();
         debugPrint('SMS inbox messages: ${filteredMessages.length}');
-        final newMessages = filteredMessages
-            .where((message) => !state.any(
-                      (existingmessage) => existingmessage.id == message.id,
-                    )
-                // condition to check the duplicate by giving them id comparision
-                // message.date!.isAfter(lastFetchedMessageTime ?? DateTime(0))
-                )
-            .toList();
-        if (newMessages.isNotEmpty) {
-          _showNewMessageNotifications(newMessages);
-          state = [
-            ...newMessages.toList(),
-            ...state,
-          ];
-          _messageStreamController.add(state);
-          lastFetchedMessageTime = newMessages.first.date;
-        }
-        // state = filteredMessages;
-        // _messageStreamController.add(filteredMessages);
-        // _showNewMessageNotifications(filteredMessages);
+        // final newMessages = filteredMessages
+        //     .where((message) => !state.any(
+        //               (existingmessage) => existingmessage.id == message.id,
+        //             )
+        //         // condition to check the duplicate by giving them id comparision
+        //         // message.date!.isAfter(lastFetchedMessageTime ?? DateTime(0))
+        //         )
+        //     .toList();
+        // if (newMessages.isNotEmpty) {
+        //   _showNewMessageNotifications(newMessages);
+        //   state = [
+        //     ...newMessages.toList(),
+        //     ...state,
+        //   ];
+        //   _messageStreamController.add(state);
+        //   lastFetchedMessageTime = newMessages.first.date;
+        // }
+        state = filteredMessages;
+        _messageStreamController.add(filteredMessages);
+        _showNewMessageNotifications(filteredMessages);
 
         return filteredMessages;
       } catch (error) {
@@ -122,7 +139,12 @@ class MessageNotifier extends StateNotifier<List<SmsMessage>> {
     for (final message in messages) {
       final sender = message.address;
       final smsText = message.body;
-      await _showNotification(sender!, smsText!);
+      final isNewMessage = lastFetchedMessageTime == null ||
+          message.date!.isAfter(lastFetchedMessageTime!);
+      if (isNewMessage) {
+        await _showNotification(sender!, smsText!);
+      }
+      // await _showNotification(sender!, smsText!);
     }
   }
 

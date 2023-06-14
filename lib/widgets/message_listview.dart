@@ -1,52 +1,78 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_sms_inbox/flutter_sms_inbox.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
-class MessageListView extends StatelessWidget {
+class MessageListView extends StatefulWidget {
   const MessageListView({
     super.key,
     required this.message,
+    required this.isExpanded,
+    // required this.onTapping,
   });
 
   final SmsMessage message;
+  final bool isExpanded;
+  // final VoidCallback onTapping;
 
   @override
+  State<MessageListView> createState() => _MessageListViewState();
+}
+
+class _MessageListViewState extends State<MessageListView> {
+  // bool isExpanded = false;
+  @override
   Widget build(BuildContext context) {
-    var limitMessageBody = message.body!.length <= 80
-        ? message.body
-        : '${message.body!.substring(0, 80)}...';
+    String messageBody = widget.message.body!;
+    var limitMessageBody = messageBody.length <= 80
+        ? widget.message.body
+        : '${widget.message.body!.substring(0, 80)}...';
+    String? fullMessageBody =
+        widget.isExpanded ? messageBody : limitMessageBody;
     // Format the date to display only the time
-    var formattedTime = _formatDateTime(message.date!);
+    var formattedTime = _formatDateTime(widget.message.date!);
     // DateFormat.Hm().format(message.date!);
-    return Card(
-      elevation: 5.0,
-      child: Padding(
-        padding: const EdgeInsets.all(4.0),
-        child: ListTile(
-          title: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  '${message.sender}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
+    return Stack(
+      children: [
+        Card(
+          elevation: 5.0,
+          child: Padding(
+            padding: const EdgeInsets.all(4.0),
+            child: ListTile(
+              onTap: () {
+                String body = widget.message.body!;
+                String title = widget.message.sender!;
+                DateTime time = widget.message.date!;
+                detailedSMS(body, title, time);
+                // widget.onTapping;
+              },
+              title: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '${widget.message.sender}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                  overflow: TextOverflow.ellipsis,
-                ),
+                  Text(
+                    formattedTime,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w300,
+                    ),
+                  ),
+                ],
               ),
-              Text(
-                formattedTime,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w300,
-                ),
+              subtitle: Text(
+                widget.isExpanded ? messageBody : fullMessageBody!,
+                maxLines: widget.isExpanded ? null : 2,
               ),
-            ],
+            ),
           ),
-          // title: Text('${message.sender}'),
-          // trailing: Text(formattedTime),
-          subtitle: Text(limitMessageBody!, maxLines: 2),
         ),
-      ),
+      ],
     );
   }
 
@@ -59,5 +85,53 @@ class MessageListView extends StatelessWidget {
     } else {
       return DateFormat.yMd().format(dateTime);
     }
+  }
+
+  Future<void> detailedSMS(String body, String senderName, DateTime dateTime) {
+    return showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  senderName,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                  ),
+                ),
+              ),
+              Text(
+                DateFormat.Hm().format(dateTime),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w300,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            body,
+            style: GoogleFonts.montserrat(
+              fontSize: 16,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              style: TextButton.styleFrom(
+                textStyle: Theme.of(context).textTheme.labelLarge,
+              ),
+              child: const Text('Close'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 }
