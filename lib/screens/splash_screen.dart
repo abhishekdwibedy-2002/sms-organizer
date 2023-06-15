@@ -96,7 +96,7 @@ class _SplashScreenState extends State<SplashScreen>
                       width: screenSize.width * 0.42,
                       decoration: const BoxDecoration(
                         image: DecorationImage(
-                          image: AssetImage('assets/images/logo.jpg'),
+                          image: AssetImage('assets/images/ic_launcher.png'),
                           fit: BoxFit.cover,
                         ),
                       ),

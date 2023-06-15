@@ -21,8 +21,8 @@ class MessageNotifier extends StateNotifier<List<SmsMessage>> {
     _initializeNotifications();
     fetchMessages();
     startSmsListener();
+    startFetch();
   }
-  // final Shader _read;
 
   final StreamController<List<SmsMessage>> _messageStreamController =
       StreamController<List<SmsMessage>>();
@@ -59,8 +59,7 @@ class MessageNotifier extends StateNotifier<List<SmsMessage>> {
   }
 
   void startFetch() {
-    Timer.periodic(const Duration(seconds: 30), (_) {
-      // _messageStreamController.add(state);
+    Timer.periodic(const Duration(hours: 1), (_) {
       fetchMessages();
     });
   }
@@ -115,7 +114,7 @@ class MessageNotifier extends StateNotifier<List<SmsMessage>> {
       }
     } else {
       await Permission.sms.request();
-      throw 0;
+      return fetchMessages();
     }
   }
 

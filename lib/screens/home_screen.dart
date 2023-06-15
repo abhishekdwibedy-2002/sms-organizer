@@ -24,13 +24,6 @@ class HomeScreen extends ConsumerWidget {
         ),
         backgroundColor: Theme.of(context).colorScheme.primaryContainer,
         foregroundColor: Theme.of(context).colorScheme.onSurface,
-        actions: [
-          IconButton(
-            onPressed: () =>
-                ref.read(messageNotifierProvider).refreshMessages(),
-            icon: const Icon(Icons.refresh_rounded),
-          ),
-        ],
       ),
       body: LiquidPullToRefresh(
         color: Theme.of(context).colorScheme.secondaryContainer,
@@ -40,47 +33,50 @@ class HomeScreen extends ConsumerWidget {
           builder: (context) {
             final smsMessages = ref.watch(messageProvider);
             return smsMessages.when(
-              data: (sms) {
-                final groupedMessages =
-                    ref.read(messageNotifierProvider).groupMessagesByHours(sms);
-
-                return ListView.builder(
-                  padding: const EdgeInsets.all(8),
-                  itemCount: groupedMessages.length,
-                  itemBuilder: (context, index) {
-                    final entry = groupedMessages.entries.elementAt(index);
-                    final hourDiff = entry.key;
-                    final messages = entry.value;
-                    return Column(
-                      children: [
-                        Text(hourDiff),
-                        ListView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: messages.length,
-                          itemBuilder: (context, index) {
-                            final message = messages[index];
-                            final isExpanded =
-                                ref.read(expandedIndexProvider).contains(index);
-                            return MessageListView(
-                              message: message,
-                              isExpanded: isExpanded,
-                            );
-                          },
-                        ),
-                      ],
-                    );
-                  },
-                );
-              },
-              error: (error, stackTrace) => Text(
-                error.toString(),
-              ),
-              loading: () => Center(
-                child: CircularProgressIndicator(
-                    color: Theme.of(context).colorScheme.primary),
-              ),
-            );
+                data: (sms) {
+                  final groupedMessages = ref
+                      .read(messageNotifierProvider)
+                      .groupMessagesByHours(sms);
+                  return ListView.builder(
+                    padding: const EdgeInsets.all(8),
+                    itemCount: groupedMessages.length,
+                    itemBuilder: (context, index) {
+                      final entry = groupedMessages.entries.elementAt(index);
+                      final hourDiff = entry.key;
+                      final messages = entry.value;
+                      return Column(
+                        children: [
+                          Text(hourDiff),
+                          ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: messages.length,
+                            itemBuilder: (context, index) {
+                              final message = messages[index];
+                              final isExpanded = ref
+                                  .read(expandedIndexProvider)
+                                  .contains(index);
+                              return MessageListView(
+                                message: message,
+                                isExpanded: isExpanded,
+                              );
+                            },
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
+                error: (error, stackTrace) => Text(
+                      error.toString(),
+                    ),
+                loading: () {
+                  debugPrint('Loading...');
+                  return Center(
+                    child: CircularProgressIndicator(
+                        color: Theme.of(context).colorScheme.primary),
+                  );
+                });
           },
         ),
       ),
