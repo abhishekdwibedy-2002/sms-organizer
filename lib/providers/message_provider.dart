@@ -31,11 +31,15 @@ class MessageNotifier extends StateNotifier<List<SmsMessage>> {
   }
 
   DateTime? lastFetchedMessageTime;
+  String messageSender = '';
+  String sms = '';
 
   void startSmsListener() {
-    PlatformChannel().smsStream().listen((newSms) {
+    PlatformChannel().smsStream().listen((newSmsEvent) {
       fetchMessages();
-      _showNewMessageNotifications(newSms);
+      messageSender = newSmsEvent['senderNumber'];
+      sms = newSmsEvent['messageBody'];
+      _showNotification(messageSender, sms);
     });
   }
 
@@ -102,27 +106,8 @@ class MessageNotifier extends StateNotifier<List<SmsMessage>> {
           return difference.inDays <= 1;
         }).toList();
         debugPrint('SMS inbox messages: ${filteredMessages.length}');
-        // final newMessages = filteredMessages
-        //     .where((message) => !state.any(
-        //               (existingmessage) => existingmessage.id == message.id,
-        //             )
-        //         // condition to check the duplicate by giving them id comparision
-        //         // message.date!.isAfter(lastFetchedMessageTime ?? DateTime(0))
-        //         )
-        //     .toList();
-        // if (newMessages.isNotEmpty) {
-        //   _showNewMessageNotifications(newMessages);
-        //   state = [
-        //     ...newMessages.toList(),
-        //     ...state,
-        //   ];
-        //   _messageStreamController.add(state);
-        //   lastFetchedMessageTime = newMessages.first.date;
-        // }
         state = filteredMessages;
         _messageStreamController.add(filteredMessages);
-        _showNewMessageNotifications(filteredMessages);
-
         return filteredMessages;
       } catch (error) {
         debugPrint('Error fetching messages: $error');
@@ -131,20 +116,6 @@ class MessageNotifier extends StateNotifier<List<SmsMessage>> {
     } else {
       await Permission.sms.request();
       throw 0;
-    }
-  }
-
-  // show notification for new message fetched
-  Future<void> _showNewMessageNotifications(List<SmsMessage> messages) async {
-    for (final message in messages) {
-      final sender = message.address;
-      final smsText = message.body;
-      final isNewMessage = lastFetchedMessageTime == null ||
-          message.date!.isAfter(lastFetchedMessageTime!);
-      if (isNewMessage) {
-        await _showNotification(sender!, smsText!);
-      }
-      // await _showNotification(sender!, smsText!);
     }
   }
 
