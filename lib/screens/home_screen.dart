@@ -24,6 +24,7 @@ class HomeScreen extends ConsumerWidget {
         ),
         backgroundColor: Theme.of(context).colorScheme.primaryContainer,
         foregroundColor: Theme.of(context).colorScheme.onSurface,
+        
       ),
       body: LiquidPullToRefresh(
         color: Theme.of(context).colorScheme.secondaryContainer,

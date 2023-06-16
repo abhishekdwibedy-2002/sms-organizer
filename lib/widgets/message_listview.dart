@@ -20,7 +20,6 @@ class MessageListView extends StatefulWidget {
 }
 
 class _MessageListViewState extends State<MessageListView> {
-  // bool isExpanded = false;
   @override
   Widget build(BuildContext context) {
     String messageBody = widget.message.body!;

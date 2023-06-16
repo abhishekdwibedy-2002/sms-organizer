@@ -37,7 +37,7 @@ class MessageNotifier extends StateNotifier<List<SmsMessage>> {
   void startSmsListener() {
     PlatformChannel().smsStream().listen((newSmsEvent) {
       fetchMessages();
-      messageSender = newSmsEvent['senderNumber'];
+      messageSender = newSmsEvent['senderName'];
       sms = newSmsEvent['messageBody'];
       _showNotification(messageSender, sms);
     });
