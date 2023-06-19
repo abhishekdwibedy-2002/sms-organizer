@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_sms_inbox/flutter_sms_inbox.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -87,6 +88,9 @@ class _MessageListViewState extends State<MessageListView> {
   }
 
   Future<void> detailedSMS(String body, String senderName, DateTime dateTime) {
+    String? otpCode = getCode(body);
+    bool isOtpMessage = otpCode != null;
+
     return showDialog<void>(
       context: context,
       builder: (BuildContext context) {
@@ -119,18 +123,50 @@ class _MessageListViewState extends State<MessageListView> {
             ),
           ),
           actions: <Widget>[
-            TextButton(
-              style: TextButton.styleFrom(
-                textStyle: Theme.of(context).textTheme.labelLarge,
-              ),
-              child: const Text('Close'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                if (isOtpMessage)
+                  ElevatedButton(
+                    onPressed: () {
+                      _copyToClipboard(otpCode);
+                      Navigator.of(context).pop();
+                    },
+                    child: Row(
+                      children: [
+                        const Icon(Icons.copy_outlined),
+                        Text(otpCode),
+                      ],
+                    ),
+                  ),
+                TextButton(
+                  style: TextButton.styleFrom(
+                    textStyle: Theme.of(context).textTheme.labelLarge,
+                  ),
+                  child: const Text('Close'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ],
             ),
           ],
         );
       },
     );
+  }
+
+  String? getCode(String sms) {
+    RegExp regex = RegExp(r'(\b\d{4,6}\b)');
+    final Match? match = regex.firstMatch(sms);
+    debugPrint(match?.group(0));
+    return match?.group(0);
+  }
+
+  void _copyToClipboard(String? text) {
+    if (text != null) {
+      Clipboard.setData(ClipboardData(text: text));
+      debugPrint('OTP Copied: $text');
+    }
   }
 }
