@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_sms_inbox/flutter_sms_inbox.dart';
+import 'package:contacts_service/contacts_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:smstracker/notification.dart';
@@ -91,13 +92,15 @@ class MessageNotifier extends StateNotifier<List<SmsMessage>> {
   Future<List<SmsMessage>> fetchMessages() async {
     final query = SmsQuery();
     final permission = await Permission.sms.status;
-    if (permission.isGranted) {
+    final contactPermission = await Permission.contacts.status;
+    if (permission.isGranted && contactPermission.isGranted) {
       try {
         final messages = await query.querySms(
           kinds: [
             SmsQueryKind.inbox,
           ],
         );
+        final contacts = await ContactsService.getContacts();
         final filteredMessages = messages.where((message) {
           var now = DateTime.now(); //show recent time
           var difference = now.difference(message.date!);
@@ -105,6 +108,21 @@ class MessageNotifier extends StateNotifier<List<SmsMessage>> {
           return difference.inDays <= 1;
         }).toList();
         debugPrint('SMS inbox messages: ${filteredMessages.length}');
+        for (var message in filteredMessages) {
+          // debugPrint(contacts[0] as String?);
+          final contact = contacts.firstWhere(
+            (contact) => contact.phones!.any(
+              (phone) =>
+                  phone.value!.replaceAll(RegExp(r'\D'), '') ==
+                  message.address!.replaceAll(RegExp(r'\D'), ''),
+            ),
+            orElse: () => Contact(),
+          );
+
+          final senderName = contact.displayName ?? message.address!;
+          debugPrint(senderName);
+          message.address = senderName;
+        }
         state = filteredMessages;
         _messageStreamController.add(filteredMessages);
         return filteredMessages;
@@ -114,6 +132,7 @@ class MessageNotifier extends StateNotifier<List<SmsMessage>> {
       }
     } else {
       await Permission.sms.request();
+      await Permission.contacts.request();
       return fetchMessages();
     }
   }
