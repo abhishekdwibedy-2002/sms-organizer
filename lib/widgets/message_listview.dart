@@ -51,8 +51,9 @@ class _MessageListViewState extends State<MessageListView> {
                   Expanded(
                     child: Text(
                       '${widget.message.sender}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),

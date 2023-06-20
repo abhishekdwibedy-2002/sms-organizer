@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:smstracker/widgets/message_listview.dart';
 import 'package:smstracker/providers/message_provider.dart';
 import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
@@ -9,10 +10,6 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    Future<void> refreshMessages() async {
-      await ref.read(messageNotifierProvider).refreshMessages();
-    }
-
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -24,12 +21,11 @@ class HomeScreen extends ConsumerWidget {
         ),
         backgroundColor: Theme.of(context).colorScheme.primaryContainer,
         foregroundColor: Theme.of(context).colorScheme.onSurface,
-        
       ),
       body: LiquidPullToRefresh(
         color: Theme.of(context).colorScheme.secondaryContainer,
         showChildOpacityTransition: true,
-        onRefresh: refreshMessages,
+        onRefresh: () => ref.read(messageNotifierProvider).refreshMessages(),
         child: Builder(
           builder: (context) {
             final smsMessages = ref.watch(messageProvider);
@@ -46,8 +42,18 @@ class HomeScreen extends ConsumerWidget {
                       final hourDiff = entry.key;
                       final messages = entry.value;
                       return Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Text(hourDiff),
+                          Text(
+                            '$hourDiff :-',
+                            textScaleFactor: 1.2,
+                            style: GoogleFonts.roboto(
+                              fontStyle: FontStyle.italic,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 15,
+                              letterSpacing: 1,
+                            ),
+                          ),
                           ListView.builder(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
@@ -62,6 +68,9 @@ class HomeScreen extends ConsumerWidget {
                                 isExpanded: isExpanded,
                               );
                             },
+                          ),
+                          const SizedBox(
+                            height: 10,
                           ),
                         ],
                       );

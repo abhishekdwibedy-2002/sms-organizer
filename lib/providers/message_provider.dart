@@ -19,21 +19,21 @@ final messageNotifierProvider = Provider<MessageNotifier>((ref) {
 
 class MessageNotifier extends StateNotifier<List<SmsMessage>> {
   MessageNotifier() : super([]) {
-    _initializeNotifications();
+    initializeNotifications();
     fetchMessages();
     startSmsListener();
-    startFetch();
+    // startFetch();
   }
 
   final StreamController<List<SmsMessage>> _messageStreamController =
-      StreamController<List<SmsMessage>>();
+      StreamController<List<SmsMessage>>.broadcast();
   Stream<List<SmsMessage>> messageStream() {
     return _messageStreamController.stream;
   }
 
-  DateTime? lastFetchedMessageTime;
   String messageSender = '';
   String sms = '';
+  late Map<String, Contact> phoneToContact;
 
   void startSmsListener() {
     PlatformChannel().smsStream().listen((newSmsEvent) {
@@ -44,7 +44,7 @@ class MessageNotifier extends StateNotifier<List<SmsMessage>> {
     });
   }
 
-  Future<void> _initializeNotifications() async {
+  Future<void> initializeNotifications() async {
     await NotificationService.initializeNotifications();
   }
 
@@ -53,9 +53,6 @@ class MessageNotifier extends StateNotifier<List<SmsMessage>> {
   }
 
   Future<void> refreshMessages() async {
-    state = [];
-    _messageStreamController.add(state);
-    lastFetchedMessageTime = null;
     await fetchMessages();
   }
 
@@ -90,36 +87,18 @@ class MessageNotifier extends StateNotifier<List<SmsMessage>> {
   }
 
   Future<List<SmsMessage>> fetchMessages() async {
-    final query = SmsQuery();
     final permission = await Permission.sms.status;
     final contactPermission = await Permission.contacts.status;
     if (permission.isGranted && contactPermission.isGranted) {
       try {
-        final messages = await query.querySms(
-          kinds: [
-            SmsQueryKind.inbox,
-          ],
-        );
+        final messages = await querySmsMessages();
         final contacts = await ContactsService.getContacts();
-        final filteredMessages = messages.where((message) {
-          var now = DateTime.now(); //show recent time
-          var difference = now.difference(message.date!);
-          // condition to return the sms that is inside 1 day
-          return difference.inDays <= 1;
-        }).toList();
+        final filteredMessages = filterMessagesWithinOneDay(messages, contacts);
         debugPrint('SMS inbox messages: ${filteredMessages.length}');
+        phoneToContact = createPhoneToContactMap(contacts);
         for (var message in filteredMessages) {
-          // debugPrint(contacts[0] as String?);
-          final contact = contacts.firstWhere(
-            (contact) => contact.phones!.any(
-              (phone) =>
-                  phone.value!.replaceAll(RegExp(r'\D'), '') ==
-                  message.address!.replaceAll(RegExp(r'\D'), ''),
-            ),
-            orElse: () => Contact(),
-          );
-
-          final senderName = contact.displayName ?? message.address!;
+          final contact = findContactForMessage(message);
+          final senderName = contact?.displayName ?? message.address!;
           debugPrint(senderName);
           message.address = senderName;
         }
@@ -131,10 +110,44 @@ class MessageNotifier extends StateNotifier<List<SmsMessage>> {
         rethrow;
       }
     } else {
-      await Permission.sms.request();
-      await Permission.contacts.request();
-      return fetchMessages();
+      await requestPermissions();
+      return await fetchMessages();
     }
+  }
+
+  Future<List<SmsMessage>> querySmsMessages() {
+    final query = SmsQuery();
+    return query.querySms(kinds: [SmsQueryKind.inbox]);
+  }
+
+  List<SmsMessage> filterMessagesWithinOneDay(
+      List<SmsMessage> messages, List<Contact> contacts) {
+    final now = DateTime.now();
+    return messages.where((message) {
+      final difference = now.difference(message.date!);
+      return difference.inDays <= 1;
+    }).toList();
+  }
+
+  Map<String, Contact> createPhoneToContactMap(List<Contact> contacts) {
+    final phoneToContact = <String, Contact>{};
+    for (var contact in contacts) {
+      for (var phone in contact.phones ?? []) {
+        final phoneNumber = phone.value!.replaceAll(RegExp(r'\D'), '');
+        phoneToContact[phoneNumber] = contact;
+      }
+    }
+    return phoneToContact;
+  }
+
+  Contact? findContactForMessage(SmsMessage message) {
+    final phoneNumber = message.address!.replaceAll(RegExp(r'\D'), '');
+    return phoneToContact[phoneNumber];
+  }
+
+  Future<void> requestPermissions() async {
+    await Permission.sms.request();
+    await Permission.contacts.request();
   }
 
   @override
