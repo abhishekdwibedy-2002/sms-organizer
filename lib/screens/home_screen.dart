@@ -26,8 +26,8 @@ class HomeScreen extends ConsumerWidget {
         color: Theme.of(context).colorScheme.secondaryContainer,
         showChildOpacityTransition: true,
         onRefresh: () => ref.read(messageNotifierProvider).refreshMessages(),
-        child: Builder(
-          builder: (context) {
+        child: Consumer(
+          builder: (context,ref,_) {
             final smsMessages = ref.watch(messageProvider);
             return smsMessages.when(
                 data: (sms) {
