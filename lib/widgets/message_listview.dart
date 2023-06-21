@@ -1,8 +1,10 @@
+// import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_sms_inbox/flutter_sms_inbox.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+// import 'package:url_launcher/url_launcher.dart';
 
 class MessageListView extends StatefulWidget {
   const MessageListView({
@@ -92,6 +94,26 @@ class _MessageListViewState extends State<MessageListView> {
     String? otpCode = getCode(body);
     bool isOtpMessage = otpCode != null;
 
+    // RegExp phoneRegex = RegExp(r'(\b\d{10,12}\b)');
+    // makingPhoneCall(String phoneNumber) async {
+    //   var url = Uri.parse('tel:$phoneNumber');
+    //   if (await canLaunchUrl(url)) {
+    //     await launchUrl(url);
+    //   } else {
+    //     throw 'Could not launch $url';
+    //   }
+    // }
+
+    // RegExp link = RegExp(
+    //     r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+');
+    // launch(Uri link) async {
+    //   if (await canLaunchUrl(link)) {
+    //     await launchUrl(link);
+    //   } else {
+    //     throw 'Could not launch $link';
+    //   }
+    // }
+
     return showDialog<void>(
       context: context,
       builder: (BuildContext context) {
@@ -116,7 +138,7 @@ class _MessageListViewState extends State<MessageListView> {
               ),
             ],
           ),
-          content: Text(
+          content: SelectableText(
             body,
             style: GoogleFonts.montserrat(
               fontSize: 16,
@@ -132,6 +154,7 @@ class _MessageListViewState extends State<MessageListView> {
                     onPressed: () {
                       _copyToClipboard(otpCode);
                       Navigator.of(context).pop();
+                      _showCopiedSnackbar();
                     },
                     child: Row(
                       children: [
@@ -169,5 +192,14 @@ class _MessageListViewState extends State<MessageListView> {
       Clipboard.setData(ClipboardData(text: text));
       debugPrint('OTP Copied: $text');
     }
+  }
+
+  void _showCopiedSnackbar() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('OTP copied successfully...'),
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 }
